@@ -1,26 +1,248 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  --color-green-action: #2ffe1d;
+  --color-purple-surface: #1e161e;
+  --color-dark-bg: #000000;
+  --color-dark-card: #1e161e;
+  --color-dark-inactive: #1a1a1a;
+  --color-dark-muted: #2b2b2b;
+  --color-text-primary: #ffffff;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --font-sans: "Inter", system-ui, sans-serif;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  --shadow-card: 0 6px 18px rgba(47, 254, 29, 0.06);
+  --shadow-glow: 0 0 20px rgba(47, 254, 29, 0.3);
+  --shadow-glow-sm: 0 0 10px rgba(47, 254, 29, 0.2);
+  --shadow-glow-lg: 0 0 40px rgba(47, 254, 29, 0.4);
+
+  --animate-shimmer: shimmer 1.5s infinite linear;
+  --animate-pulse-glow: pulseGlow 2s ease-in-out infinite;
+  --animate-fade-in: fadeIn 0.3s ease-out forwards;
+  --animate-slide-up: slideUp 0.4s cubic-bezier(0.22, 0.9, 0.4, 1) forwards;
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  @keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 10px rgba(47, 254, 29, 0.2); }
+    50% { box-shadow: 0 0 28px rgba(47, 254, 29, 0.55); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  background-color: #000;
+  color: #fff;
+  font-family: "Inter", system-ui, sans-serif;
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: #000; }
+::-webkit-scrollbar-thumb { background: #2b2b2b; border-radius: 4px; }
+
+/* Shimmer skeleton */
+.skeleton {
+  background: linear-gradient(90deg, #1a1a1a 25%, #2b2b2b 50%, #1a1a1a 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+  border-radius: 10px;
+}
+
+/* Progress bar */
+.progress-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: #1a1a1a;
+  overflow: hidden;
+  position: relative;
+}
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #1dfe52, #2ffe1d);
+  transition: width 0.5s cubic-bezier(0.22, 0.9, 0.4, 1);
+  position: relative;
+  will-change: width;
+}
+.progress-bar-fill::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 20px;
+  height: 100%;
+  background: rgba(255,255,255,0.3);
+  filter: blur(4px);
+  border-radius: 999px;
+}
+.progress-bar-fill.completed {
+  box-shadow: 0 0 12px rgba(47, 254, 29, 0.6);
+}
+
+/* Card */
+.card {
+  background: #1e161e;
+  border: 1px solid rgba(47, 254, 29, 0.08);
+  box-shadow: 0 6px 18px rgba(47, 254, 29, 0.06);
+  border-radius: 16px;
+  transition: transform 0.18s cubic-bezier(0.22, 0.9, 0.4, 1),
+    box-shadow 0.18s ease;
+}
+.card:active {
+  opacity: 0.9;
+  box-shadow: 0 2px 8px rgba(47, 254, 29, 0.04);
+}
+
+/* Button press — touch-action: manipulation fixes iOS Safari double-tap delay */
+button, a {
+  touch-action: manipulation;
+  cursor: pointer;
+}
+.btn-press {
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+.btn-press:active {
+  opacity: 0.75;
+}
+
+/* Glow completed */
+.glow-completed {
+  box-shadow: 0 0 20px rgba(47, 254, 29, 0.4), 0 0 40px rgba(47, 254, 29, 0.15);
+}
+
+/* Chip */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  background: #1e161e;
+  border: 1px solid rgba(47, 254, 29, 0.2);
+  border-radius: 999px;
+  font-size: 13px;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.chip:active {
+  background: rgba(47, 254, 29, 0.12);
+  border-color: rgba(47, 254, 29, 0.5);
+}
+
+/* main-content replaced by fixed layout in layout.tsx */
+
+/* Bottom nav safe area */
+.bottom-nav-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Typing animation dots */
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  background: #2ffe1d;
+  border-radius: 50%;
+  display: inline-block;
+  animation: typingBounce 1.2s ease-in-out infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typingBounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* Page enter animation — opacity only, no transform (avoids iOS Safari stacking context bug) */
+@keyframes pageEnter {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.page-enter {
+  animation: pageEnter 0.3s ease forwards;
+  pointer-events: auto !important;
+}
+
+/* AnimatedCheck */
+@keyframes checkPop {
+  0%   { transform: scale(0); opacity: 0; }
+  60%  { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes checkDraw {
+  from { stroke-dashoffset: 30; }
+  to   { stroke-dashoffset: 0; }
+}
+.check-circle {
+  animation: checkPop 0.3s ease forwards;
+}
+.check-path {
+  stroke-dasharray: 30;
+  stroke-dashoffset: 30;
+  animation: checkDraw 0.28s 0.08s ease forwards;
+}
+
+/* Confetti */
+@keyframes confettiFall {
+  0%   { transform: translateY(-10px) rotate(0deg);    opacity: 1; }
+  80%  { opacity: 0.8; }
+  100% { transform: translateY(108vh) rotate(540deg);  opacity: 0; }
+}
+@keyframes celebFadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.celeb-enter { animation: celebFadeUp 0.4s cubic-bezier(0.22, 0.9, 0.4, 1) forwards; }
+
+/* Bottom sheet */
+@keyframes sheetIn {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+@keyframes backdropIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.sheet-enter  { animation: sheetIn 0.32s cubic-bezier(0.22, 0.9, 0.4, 1) forwards; }
+.backdrop-in  { animation: backdropIn 0.25s ease forwards; }
+
+/* Onboarding step animation */
+@keyframes onbFadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.onb-enter {
+  animation: onbFadeUp 0.32s cubic-bezier(0.22, 0.9, 0.4, 1) forwards;
+}
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .progress-bar-fill { transition: none; }
 }
