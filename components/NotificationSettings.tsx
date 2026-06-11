@@ -40,8 +40,7 @@ async function showPushNotification(title: string, body: string) {
         icon: "/icon-192.png",
         badge: "/icon-192.png",
         tag: "fitpro-reminder",
-        vibrate: [200, 100, 200],
-      });
+      } as NotificationOptions);
       return;
     } catch {
       // fall through to Notification API
