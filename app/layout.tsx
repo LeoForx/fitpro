@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import BottomNav from "@/components/BottomNav";
 import SwRegister from "@/components/SwRegister";
+import ClientOverlay from "@/components/ClientOverlay";
 
 export const metadata: Metadata = {
   title: "FitPro — Treinos & Dieta",
@@ -35,6 +36,7 @@ export default function RootLayout({
       </head>
       <body style={{ background: "#000", color: "#fff", overflow: "hidden" }} suppressHydrationWarning>
         <SwRegister />
+        <ClientOverlay />
         <main style={{
           position: "fixed",
           top: 0,

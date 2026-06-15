@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface BadgeUnlockModalProps {
@@ -15,7 +16,9 @@ export default function BadgeUnlockModal({ badge, onClose }: BadgeUnlockModalPro
     return () => clearTimeout(t);
   }, [badge, onClose]);
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <AnimatePresence>
       {badge && (
         <motion.div
@@ -132,6 +135,7 @@ export default function BadgeUnlockModal({ badge, onClose }: BadgeUnlockModalPro
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

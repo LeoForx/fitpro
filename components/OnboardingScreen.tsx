@@ -23,8 +23,8 @@ const METAS = [2, 3, 4, 5, 6];
 
 const slide = {
   initial: (dir: number) => ({ x: dir * 60, opacity: 0 }),
-  animate: { x: 0, opacity: 1, transition: { duration: 0.32, ease: "easeOut" } },
-  exit:    (dir: number) => ({ x: dir * -60, opacity: 0, transition: { duration: 0.22, ease: "easeIn" } }),
+  animate: { x: 0, opacity: 1, transition: { duration: 0.32, ease: "easeOut" as const } },
+  exit:    (dir: number) => ({ x: dir * -60, opacity: 0, transition: { duration: 0.22, ease: "easeIn" as const } }),
 };
 
 interface Props {

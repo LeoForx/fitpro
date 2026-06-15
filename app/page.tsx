@@ -11,7 +11,6 @@ import NotificationSettings, { scheduleReminder } from "@/components/Notificatio
 import ProfileSheet from "@/components/ProfileSheet";
 import XpCard from "@/components/XpCard";
 import { useAppStore } from "@/store/useAppStore";
-import OnboardingScreen from "@/components/OnboardingScreen";
 
 
 function GaugeCircular({ value, max }: { value: number; max: number }) {
@@ -67,15 +66,10 @@ export default function HomePage() {
   const [checked, setChecked] = useState(false);
   const [showNotifSettings, setShowNotifSettings] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
   const [badgeQueue, setBadgeQueue] = useState<typeof BADGES>([]);
   const [currentBadge, setCurrentBadge] = useState<typeof BADGES[0] | null>(null);
 
   useEffect(() => {
-    const onboarded = localStorage.getItem("fitpro_onboarded");
-    if (!onboarded) {
-      setShowOnboarding(true);
-    }
     setChecked(true);
     // Re-schedule any existing reminder on app open
     const raw = localStorage.getItem("fitpro_reminder");
@@ -107,10 +101,6 @@ export default function HomePage() {
   }, [badgeQueue, currentBadge]);
 
   if (!checked) return null;
-
-  if (showOnboarding) {
-    return <OnboardingScreen onDone={() => setShowOnboarding(false)} />;
-  }
 
   const hora = new Date().getHours();
   const saudacao = hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";

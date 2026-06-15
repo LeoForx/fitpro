@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import ExerciseMedia from "@/components/ExerciseMedia";
@@ -173,7 +174,7 @@ export default function ExecucaoPage() {
 
     const stagger = (i: number) => ({ initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.4, ease: "easeOut" as const } } });
 
-    return (
+    return createPortal(
       <div
         style={{
           position: "fixed", inset: 0, zIndex: 9999,
@@ -376,7 +377,8 @@ export default function ExecucaoPage() {
           </motion.div>
 
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 

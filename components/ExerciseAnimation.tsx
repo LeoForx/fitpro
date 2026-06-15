@@ -1,5 +1,7 @@
 "use client";
 
+import React from "react";
+
 const GREEN  = "#2ffe1d";
 const DIM    = "#666666";
 const BODY   = "#333333";
@@ -447,7 +449,7 @@ function DefaultAnimation() {
 
 // ── Mapeamento por nome de exercício ───────────────────────────────────────
 
-const EXERCISE_NAME_MAP: Record<string, JSX.Element> = {
+const EXERCISE_NAME_MAP: Record<string, React.ReactElement> = {
   // Peito
   "supino reto":           <BenchPressAnimation />,
   "supino inclinado":      <BenchPressAnimation />,
@@ -504,7 +506,7 @@ const EXERCISE_NAME_MAP: Record<string, JSX.Element> = {
 };
 
 // Fallback por grupo muscular
-const MUSCLE_MAP: Record<string, JSX.Element> = {
+const MUSCLE_MAP: Record<string, React.ReactElement> = {
   "Peito":    <BenchPressAnimation />,
   "Costas":   <PulldownAnimation />,
   "Pernas":   <SquatAnimation />,
