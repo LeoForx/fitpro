@@ -171,7 +171,7 @@ export default function ExecucaoPage() {
       } catch { /* cancelled */ }
     };
 
-    const stagger = (i: number) => ({ initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.4, ease: "easeOut" } } });
+    const stagger = (i: number) => ({ initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.4, ease: "easeOut" as const } } });
 
     return (
       <div
