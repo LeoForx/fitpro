@@ -3,10 +3,11 @@ import type { Exercise, WorkoutSerie, AgentMessage, Meal, UserProfile, WorkoutHi
 
 // ——— Persistence helpers ———
 
-const HISTORY_KEY = "fitpro_workout_history";
-const PROFILE_KEY = "fitpro_user_profile";
-const MEALS_KEY   = "fitpro_meals";
-const MODULES_KEY = "fitpro_modules";
+const HISTORY_KEY  = "fitpro_workout_history";
+const PROFILE_KEY  = "fitpro_user_profile";
+const MEALS_KEY    = "fitpro_meals";
+const MODULES_KEY  = "fitpro_modules";
+const CHAT_KEY     = "fitpro_chat_history";
 
 function loadHistory(): WorkoutHistoryEntry[] {
   if (typeof window === "undefined") return [];
@@ -83,6 +84,22 @@ const DEFAULT_MODULES: AppModule[] = [
     ],
   },
 ];
+
+const INITIAL_GREETING: AgentMessage = {
+  id: "1",
+  role: "agent",
+  content: "Olá! Sou seu coach de treinos e dieta. Como posso te ajudar hoje?",
+  timestamp: Date.now() - 10000,
+};
+
+function loadChatHistory(): AgentMessage[] {
+  if (typeof window === "undefined") return [INITIAL_GREETING];
+  try {
+    const saved = JSON.parse(localStorage.getItem(CHAT_KEY) ?? "null");
+    if (Array.isArray(saved) && saved.length > 0) return saved;
+  } catch { /* ignore */ }
+  return [INITIAL_GREETING];
+}
 
 function loadModules(): AppModule[] {
   if (typeof window === "undefined") return DEFAULT_MODULES;
@@ -303,21 +320,22 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }),
 
   // ——— Agent ———
-  agentMessages: [
-    { id: "1", role: "agent", content: "Olá! Sou seu coach de treinos e dieta. Como posso te ajudar hoje?", timestamp: Date.now() - 10000 },
-  ],
+  agentMessages: loadChatHistory(),
   isAgentTyping: false,
 
   addUserMessage: (content) =>
-    set((s) => ({
-      agentMessages: [...s.agentMessages, { id: Date.now().toString(), role: "user", content, timestamp: Date.now() }],
-    })),
+    set((s) => {
+      const updated = [...s.agentMessages, { id: Date.now().toString(), role: "user" as const, content, timestamp: Date.now() }].slice(-60);
+      try { localStorage.setItem(CHAT_KEY, JSON.stringify(updated)); } catch { /* ignore */ }
+      return { agentMessages: updated };
+    }),
 
   addAgentMessage: (content) =>
-    set((s) => ({
-      agentMessages: [...s.agentMessages, { id: Date.now().toString(), role: "agent", content, timestamp: Date.now() }],
-      isAgentTyping: false,
-    })),
+    set((s) => {
+      const updated = [...s.agentMessages, { id: Date.now().toString(), role: "agent" as const, content, timestamp: Date.now() }].slice(-60);
+      try { localStorage.setItem(CHAT_KEY, JSON.stringify(updated)); } catch { /* ignore */ }
+      return { agentMessages: updated, isAgentTyping: false };
+    }),
 
   setAgentTyping: (v) => set({ isAgentTyping: v }),
 }));
