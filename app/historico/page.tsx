@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppStore, getLevelInfo, LEVEL_THRESHOLDS } from "@/store/useAppStore";
 import PageWrapper from "@/components/PageWrapper";
@@ -88,6 +89,8 @@ function formatDate(ts: number) {
 export default function HistoricoPage() {
   const router = useRouter();
   const { workoutHistory, xp, streak, treinosCompletos, modules } = useAppStore();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const level = getLevelInfo(xp);
   const nextLevel = LEVEL_THRESHOLDS.find((l) => l.min > xp);
@@ -190,7 +193,7 @@ export default function HistoricoPage() {
             <h2 className="font-bold text-sm">Treinos por semana</h2>
             <span className="text-xs" style={{ color: "#ffffff40" }}>últimas 8 semanas</span>
           </div>
-          {workoutHistory.length > 0 ? (
+          {mounted && workoutHistory.length > 0 ? (
             <WorkoutBarChart history={workoutHistory} />
           ) : (
             <p className="text-xs text-center py-6" style={{ color: "#ffffff30" }}>Nenhum treino registrado ainda</p>
@@ -198,7 +201,7 @@ export default function HistoricoPage() {
         </div>
 
         {/* Recent workouts */}
-        {workoutHistory.length > 0 && (
+        {mounted && workoutHistory.length > 0 && (
           <div className="card p-4">
             <h2 className="font-bold text-sm mb-3">Últimos treinos</h2>
             <div className="flex flex-col gap-2">

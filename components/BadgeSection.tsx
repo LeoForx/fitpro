@@ -20,7 +20,7 @@ interface BadgeDef {
   unlocked: (s: BadgeStats) => boolean;
 }
 
-const BADGES: BadgeDef[] = [
+export const BADGES: BadgeDef[] = [
   {
     id: "first_workout",
     nome: "Primeira Suada",
@@ -251,6 +251,10 @@ export default function BadgeSection() {
       </div>
     </div>
   );
+}
+
+export function getEarnedBadgeIds(stats: BadgeStats): string[] {
+  return BADGES.filter((b) => b.unlocked(stats)).map((b) => b.id);
 }
 
 function hexToRgb(hex: string) {

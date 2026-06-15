@@ -1,37 +1,25 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import ExerciseMedia from "@/components/ExerciseMedia";
 import CircularTimer from "@/components/CircularTimer";
 import AnimatedCheck from "@/components/AnimatedCheck";
 import ProgressBar from "@/components/ProgressBar";
-import { useAppStore } from "@/store/useAppStore";
+import { useAppStore, getLevelInfo, LEVEL_THRESHOLDS } from "@/store/useAppStore";
 import type { Exercise } from "@/types";
 
 // ——— Confetti ———
-const PIECES = [
-  { l: 5,  s: 8,  d: 0,    dur: 2.8, c: "#2ffe1d", r: "3px" },
-  { l: 12, s: 6,  d: 0.15, dur: 3.1, c: "#facc15", r: "50%" },
-  { l: 20, s: 9,  d: 0.3,  dur: 2.6, c: "#60a5fa", r: "2px" },
-  { l: 28, s: 7,  d: 0.05, dur: 3.3, c: "#ffffff", r: "50%" },
-  { l: 36, s: 8,  d: 0.45, dur: 2.9, c: "#2ffe1d", r: "3px" },
-  { l: 44, s: 6,  d: 0.2,  dur: 3.0, c: "#fb923c", r: "50%" },
-  { l: 52, s: 10, d: 0.35, dur: 2.7, c: "#facc15", r: "2px" },
-  { l: 60, s: 7,  d: 0.1,  dur: 3.2, c: "#2ffe1d", r: "50%" },
-  { l: 68, s: 8,  d: 0.5,  dur: 2.8, c: "#f0abfc", r: "3px" },
-  { l: 76, s: 6,  d: 0.25, dur: 3.1, c: "#ffffff", r: "50%" },
-  { l: 84, s: 9,  d: 0.4,  dur: 2.6, c: "#60a5fa", r: "2px" },
-  { l: 92, s: 7,  d: 0.08, dur: 3.0, c: "#2ffe1d", r: "50%" },
-  { l: 8,  s: 6,  d: 1.0,  dur: 2.9, c: "#facc15", r: "3px" },
-  { l: 17, s: 8,  d: 1.2,  dur: 3.2, c: "#fb923c", r: "50%" },
-  { l: 33, s: 7,  d: 1.05, dur: 2.7, c: "#2ffe1d", r: "2px" },
-  { l: 49, s: 9,  d: 1.15, dur: 3.1, c: "#ffffff", r: "50%" },
-  { l: 63, s: 6,  d: 1.3,  dur: 2.8, c: "#60a5fa", r: "3px" },
-  { l: 79, s: 8,  d: 1.1,  dur: 3.0, c: "#f0abfc", r: "50%" },
-  { l: 23, s: 7,  d: 1.6,  dur: 2.9, c: "#facc15", r: "2px" },
-  { l: 88, s: 6,  d: 1.4,  dur: 3.3, c: "#2ffe1d", r: "50%" },
-];
+const COLORS = ["#2ffe1d", "#facc15", "#60a5fa", "#fb923c", "#f0abfc", "#ffffff", "#f43f5e"];
+const PIECES = Array.from({ length: 40 }, (_, i) => ({
+  l: (i * 2.5 + Math.sin(i) * 8 + 100) % 100,
+  s: 6 + (i % 5),
+  d: (i * 0.08) % 1.8,
+  dur: 2.5 + (i % 6) * 0.15,
+  c: COLORS[i % COLORS.length],
+  r: i % 2 === 0 ? "50%" : i % 3 === 0 ? "3px" : "2px",
+}));
 
 function Confetti() {
   return (
@@ -83,10 +71,11 @@ export default function ExecucaoPage() {
   const router = useRouter();
   const {
     currentWorkout, currentExerciseIndex, series,
-    workoutStartedAt, treinosCompletos,
+    workoutStartedAt, treinosCompletos, xp, streak, modules,
     setCurrentWorkout, setCurrentExerciseIndex,
     concluirSerie, addWorkoutHistory,
   } = useAppStore();
+  const prevXpRef = useRef(xp);
 
   const workout = currentWorkout ?? DEFAULT_WORKOUT;
   const exercicios = workout.exercicios;
@@ -128,6 +117,7 @@ export default function ExecucaoPage() {
           const durMin = workoutStartedAt
             ? Math.max(Math.round((Date.now() - workoutStartedAt) / 60000), 1)
             : series.length * 2;
+          prevXpRef.current = xp;
           addWorkoutHistory({
             id: `h_${Date.now()}`,
             workoutId: workout.id,
@@ -159,145 +149,232 @@ export default function ExecucaoPage() {
       ? Math.max(Math.round((Date.now() - workoutStartedAt) / 60000), 1)
       : series.length * 2;
     const calories = Math.max(Math.round(durationMin * 6), 100);
-    const newBadge = BADGE_MILESTONES[treinosCompletos] ?? null;
+    const newBadgeName = BADGE_MILESTONES[treinosCompletos] ?? null;
+
+    const xpGanho = xp - prevXpRef.current;
+    const level = getLevelInfo(xp);
+    const prevLevel = getLevelInfo(prevXpRef.current);
+    const leveledUp = level.level > prevLevel.level;
+    const nextLevel = LEVEL_THRESHOLDS.find((l) => l.min > xp);
+    const xpInLevel = xp - level.min;
+    const xpNeeded = nextLevel ? nextLevel.min - level.min : 1;
+    const levelPct = nextLevel ? Math.min(100, Math.round((xpInLevel / xpNeeded) * 100)) : 100;
 
     const handleShare = async () => {
-      const text = `Concluí meu treino no FitPro! 💪\n${totalExercicios} exercícios · ${series.length} séries · ${durationMin} min · ~${calories} kcal`;
+      const text = `Concluí meu treino no FitPro!\n${totalExercicios} exercícios · ${durationMin} min · ~${calories} kcal · +${xpGanho} XP`;
       try {
         if (navigator.share) {
           await navigator.share({ title: "FitPro — Treino Concluído!", text });
         } else {
           await navigator.clipboard.writeText(text);
         }
-      } catch {
-        // user cancelled share — ignore
-      }
+      } catch { /* cancelled */ }
     };
+
+    const stagger = (i: number) => ({ initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.4, ease: "easeOut" } } });
 
     return (
       <div
         style={{
-          position: "fixed", inset: 0, zIndex: 50,
+          position: "fixed", inset: 0, zIndex: 9999,
           background: "#000",
           display: "flex", flexDirection: "column",
-          alignItems: "center", justifyContent: "center",
-          padding: "0 24px",
-          paddingBottom: "env(safe-area-inset-bottom, 0px)",
-          textAlign: "center",
-          overflow: "hidden",
+          alignItems: "center",
+          padding: "0 20px",
+          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 24px)",
+          overflowY: "auto",
+          WebkitOverflowScrolling: "touch",
         }}
       >
         <Confetti />
 
-        {/* Check */}
-        <div
-          className="check-circle celeb-enter"
-          style={{
-            width: 76, height: 76, borderRadius: "50%",
-            background: "rgba(47,254,29,0.12)",
-            border: "2px solid #2ffe1d",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            marginBottom: 20,
-            boxShadow: "0 0 40px rgba(47,254,29,0.35)",
-            zIndex: 1,
-          }}
-        >
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
-            <path className="check-path" d="M4 12l5 5 11-11" stroke="#2ffe1d" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </div>
+        <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 48, gap: 0, zIndex: 1 }}>
 
-        {/* Title */}
-        <div className="celeb-enter" style={{ animationDelay: "0.1s", opacity: 0, zIndex: 1 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 4 }}>Treino Concluído!</h1>
-          <p style={{ fontSize: 15, color: "#2ffe1d", fontWeight: 600, marginBottom: 24 }}>Mandou bem demais! 🏆</p>
-        </div>
+          {/* Check icon */}
+          <motion.div
+            initial={{ scale: 0, rotate: -15 }}
+            animate={{ scale: 1, rotate: 0, transition: { type: "spring", stiffness: 300, damping: 18 } }}
+            style={{
+              width: 80, height: 80, borderRadius: "50%",
+              background: "rgba(47,254,29,0.12)",
+              border: "2px solid #2ffe1d",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              marginBottom: 20,
+              boxShadow: "0 0 40px rgba(47,254,29,0.35)",
+            }}
+          >
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+              <path d="M4 12l5 5 11-11" stroke="#2ffe1d" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </motion.div>
 
-        {/* Stats grid */}
-        <div
-          className="celeb-enter"
-          style={{
-            animationDelay: "0.2s", opacity: 0,
-            display: "grid", gridTemplateColumns: "1fr 1fr",
-            gap: 10, width: "100%", marginBottom: 16, zIndex: 1,
-          }}
-        >
-          {[
-            { icon: "⏱", label: "Duração", value: `${durationMin} min` },
-            { icon: "💪", label: "Exercícios", value: `${totalExercicios}/${totalExercicios}` },
-            { icon: "🔥", label: "Séries", value: `${series.length}` },
-            { icon: "⚡", label: "Calorias", value: `~${calories} kcal` },
-          ].map((s) => (
-            <div
-              key={s.label}
+          {/* Title */}
+          <motion.div {...stagger(1)} style={{ textAlign: "center", marginBottom: 8 }}>
+            <h1 style={{ fontSize: 28, fontWeight: 900, color: "#fff", marginBottom: 4 }}>Treino Concluido!</h1>
+            <p style={{ fontSize: 15, color: "#ffffff60" }}>{workout.nome}</p>
+          </motion.div>
+
+          {/* XP earned */}
+          <motion.div
+            {...stagger(2)}
+            style={{
+              margin: "16px 0",
+              padding: "14px 28px",
+              background: "rgba(47,254,29,0.08)",
+              border: "1.5px solid rgba(47,254,29,0.35)",
+              borderRadius: 16,
+              textAlign: "center",
+              boxShadow: "0 0 24px rgba(47,254,29,0.15)",
+            }}
+          >
+            <motion.p
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1, transition: { delay: 0.3, type: "spring", stiffness: 260, damping: 16 } }}
+              style={{ fontSize: 36, fontWeight: 900, color: "#2ffe1d", lineHeight: 1 }}
+            >
+              +{xpGanho > 0 ? xpGanho : 50} XP
+            </motion.p>
+            <p style={{ fontSize: 12, color: "#ffffff50", marginTop: 4 }}>ganhos neste treino</p>
+          </motion.div>
+
+          {/* Level up banner */}
+          {leveledUp && (
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1, transition: { delay: 0.45, type: "spring", stiffness: 280 } }}
               style={{
-                background: "#1e161e",
-                border: "1px solid rgba(47,254,29,0.1)",
-                borderRadius: 14, padding: "12px 8px",
-                display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                width: "100%", padding: "12px 16px", marginBottom: 12,
+                background: `${level.color}15`,
+                border: `1.5px solid ${level.color}50`,
+                borderRadius: 14,
+                display: "flex", alignItems: "center", gap: 12,
               }}
             >
-              <span style={{ fontSize: 20 }}>{s.icon}</span>
-              <p style={{ fontSize: 16, fontWeight: 800, color: "#fff" }}>{s.value}</p>
-              <p style={{ fontSize: 10, color: "#ffffff40", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>{s.label}</p>
-            </div>
-          ))}
-        </div>
+              <span style={{ fontSize: 28 }}>🎉</span>
+              <div>
+                <p style={{ fontSize: 11, color: "#ffffff50", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Level up!</p>
+                <p style={{ fontSize: 15, fontWeight: 800, color: level.color }}>{level.name}</p>
+              </div>
+            </motion.div>
+          )}
 
-        {/* New badge */}
-        {newBadge && (
-          <div
-            className="celeb-enter"
-            style={{
-              animationDelay: "0.3s", opacity: 0,
-              background: "rgba(47,254,29,0.08)",
-              border: "1px solid rgba(47,254,29,0.3)",
-              borderRadius: 12, padding: "10px 16px",
-              marginBottom: 16, zIndex: 1,
-              display: "flex", alignItems: "center", gap: 8,
-            }}
-          >
-            <span style={{ fontSize: 18 }}>🏅</span>
-            <div style={{ textAlign: "left" }}>
-              <p style={{ fontSize: 11, color: "#ffffff50", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Nova conquista</p>
-              <p style={{ fontSize: 13, color: "#2ffe1d", fontWeight: 700 }}>{newBadge}</p>
+          {/* Level progress */}
+          <motion.div {...stagger(3)} style={{ width: "100%", marginBottom: 12 }}>
+            <div style={{
+              padding: "14px 16px",
+              background: "#1e161e",
+              border: `1px solid ${level.color}25`,
+              borderRadius: 14,
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{
+                    width: 28, height: 28, borderRadius: 8,
+                    background: `${level.color}18`, border: `1.5px solid ${level.color}50`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 12, fontWeight: 800, color: level.color,
+                  }}>
+                    {level.level}
+                  </div>
+                  <span style={{ fontWeight: 700, fontSize: 14, color: level.color }}>{level.name}</span>
+                </div>
+                <span style={{ fontSize: 12, color: "#ffffff40" }}>{xp} XP</span>
+              </div>
+              <div style={{ height: 6, background: "#0e0e0e", borderRadius: 999, overflow: "hidden" }}>
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${levelPct}%`, transition: { delay: 0.5, duration: 0.9, ease: [0.22, 0.9, 0.4, 1] } }}
+                  style={{
+                    height: "100%",
+                    background: `linear-gradient(90deg, ${level.color}88, ${level.color})`,
+                    borderRadius: 999,
+                    boxShadow: `0 0 8px ${level.color}55`,
+                  }}
+                />
+              </div>
+              {nextLevel && (
+                <p style={{ fontSize: 11, color: "#ffffff30", marginTop: 6 }}>
+                  {nextLevel.min - xp} XP para {nextLevel.name}
+                </p>
+              )}
             </div>
-          </div>
-        )}
+          </motion.div>
 
-        {/* Buttons */}
-        <div
-          className="celeb-enter"
-          style={{
-            animationDelay: "0.35s", opacity: 0,
-            display: "flex", gap: 10, width: "100%", zIndex: 1,
-          }}
-        >
-          <button
-            className="btn-press"
-            onClick={handleShare}
-            style={{
-              flex: 1, padding: "14px 0", borderRadius: 14, fontWeight: 700, fontSize: 14,
-              background: "#1e161e", color: "#fff",
-              border: "1px solid rgba(47,254,29,0.2)",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Compartilhar
-          </button>
-          <button
-            className="btn-press"
-            onClick={() => router.push("/")}
-            style={{
-              flex: 1, padding: "14px 0", borderRadius: 14, fontWeight: 700, fontSize: 14,
-              background: "#2ffe1d", color: "#000", border: "none",
-            }}
-          >
-            Dashboard
-          </button>
+          {/* Stats grid */}
+          <motion.div {...stagger(4)} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, width: "100%", marginBottom: 12 }}>
+            {[
+              { icon: "⏱", label: "Duracao", value: `${durationMin} min` },
+              { icon: "💪", label: "Exercicios", value: `${totalExercicios}` },
+              { icon: "🔁", label: "Series", value: `${series.length}` },
+              { icon: "🔥", label: "Calorias", value: `~${calories} kcal` },
+            ].map((s) => (
+              <div
+                key={s.label}
+                style={{
+                  background: "#111",
+                  border: "1px solid #1e1e1e",
+                  borderRadius: 14, padding: "12px 8px",
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                }}
+              >
+                <span style={{ fontSize: 20 }}>{s.icon}</span>
+                <p style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>{s.value}</p>
+                <p style={{ fontSize: 10, color: "#ffffff40", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>{s.label}</p>
+              </div>
+            ))}
+          </motion.div>
+
+          {/* New badge */}
+          {newBadgeName && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0, transition: { delay: 0.55 } }}
+              style={{
+                width: "100%",
+                background: "rgba(47,254,29,0.07)",
+                border: "1px solid rgba(47,254,29,0.25)",
+                borderRadius: 12, padding: "10px 14px",
+                marginBottom: 12,
+                display: "flex", alignItems: "center", gap: 10,
+              }}
+            >
+              <span style={{ fontSize: 22 }}>🏅</span>
+              <div>
+                <p style={{ fontSize: 10, color: "#ffffff40", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Nova conquista</p>
+                <p style={{ fontSize: 13, color: "#2ffe1d", fontWeight: 700 }}>{newBadgeName}</p>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Buttons */}
+          <motion.div {...stagger(5)} style={{ display: "flex", gap: 10, width: "100%", paddingBottom: 8 }}>
+            <button
+              className="btn-press"
+              onClick={handleShare}
+              style={{
+                flex: 1, padding: "14px 0", borderRadius: 14, fontWeight: 700, fontSize: 14,
+                background: "#1e161e", color: "#fff",
+                border: "1px solid rgba(47,254,29,0.2)",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Compartilhar
+            </button>
+            <button
+              className="btn-press"
+              onClick={() => router.push("/")}
+              style={{
+                flex: 1, padding: "14px 0", borderRadius: 14, fontWeight: 700, fontSize: 14,
+                background: "#2ffe1d", color: "#000", border: "none",
+              }}
+            >
+              Dashboard
+            </button>
+          </motion.div>
+
         </div>
       </div>
     );
@@ -410,6 +487,8 @@ export default function ExecucaoPage() {
             <div className="relative">
               <ExerciseMedia
                 alt={exercise.nome}
+                exerciseName={exercise.nome}
+                muscleGroup={exercise.grupo_muscular}
                 animacaoUrl={exercise.animacao_url}
                 animacaoTipo={exercise.animacao_tipo}
                 imageUrl={exercise.image_url}

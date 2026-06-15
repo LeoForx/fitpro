@@ -6,8 +6,8 @@ export default function SwRegister() {
   const [offline, setOffline] = useState(false);
 
   useEffect(() => {
-    // Register service worker
-    if ("serviceWorker" in navigator) {
+    // Register service worker (production only — avoids HMR loop in dev)
+    if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
       navigator.serviceWorker.register("/sw.js").catch(() => {/* ignore */});
     }
 

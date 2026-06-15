@@ -1,16 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import ProgressBar from "@/components/ProgressBar";
 import PageWrapper from "@/components/PageWrapper";
-import BadgeSection from "@/components/BadgeSection";
+import BadgeSection, { BADGES, getEarnedBadgeIds } from "@/components/BadgeSection";
+import BadgeUnlockModal from "@/components/BadgeUnlockModal";
 import NotificationSettings, { scheduleReminder } from "@/components/NotificationSettings";
 import ProfileSheet from "@/components/ProfileSheet";
 import XpCard from "@/components/XpCard";
 import { useAppStore } from "@/store/useAppStore";
+import OnboardingScreen from "@/components/OnboardingScreen";
 
 
 function GaugeCircular({ value, max }: { value: number; max: number }) {
@@ -60,28 +61,56 @@ const itemVariants = {
 };
 
 export default function HomePage() {
-  const router = useRouter();
   const { streak, metaSemanal, progressoSemanal, treinosCompletos, userProfile, workoutHistory, modules, toggleAula } = useAppStore();
   const [expandedModule, setExpandedModule] = useState<string | null>(null);
   const lastWorkout = workoutHistory[0] ?? null;
   const [checked, setChecked] = useState(false);
   const [showNotifSettings, setShowNotifSettings] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [badgeQueue, setBadgeQueue] = useState<typeof BADGES>([]);
+  const [currentBadge, setCurrentBadge] = useState<typeof BADGES[0] | null>(null);
 
   useEffect(() => {
-    if (!localStorage.getItem("fitpro_onboarded")) {
-      router.replace("/onboarding");
-    } else {
-      setChecked(true);
-      // Re-schedule any existing reminder on app open
-      const raw = localStorage.getItem("fitpro_reminder");
-      if (raw) {
-        try { scheduleReminder(JSON.parse(raw)); } catch { /* ignore */ }
-      }
+    const onboarded = localStorage.getItem("fitpro_onboarded");
+    if (!onboarded) {
+      setShowOnboarding(true);
     }
-  }, [router]);
+    setChecked(true);
+    // Re-schedule any existing reminder on app open
+    const raw = localStorage.getItem("fitpro_reminder");
+    if (raw) {
+      try { scheduleReminder(JSON.parse(raw)); } catch { /* ignore */ }
+    }
+  }, []);
+
+  // Detect newly earned badges
+  useEffect(() => {
+    if (!checked) return;
+    const stats = { treinosCompletos, streak, progressoSemanal, metaSemanal, modules };
+    const earned = getEarnedBadgeIds(stats);
+    const seen = JSON.parse(localStorage.getItem("fitpro_badges_seen") ?? "[]") as string[];
+    const newOnes = earned.filter((id) => !seen.includes(id));
+    if (newOnes.length > 0) {
+      localStorage.setItem("fitpro_badges_seen", JSON.stringify(earned));
+      const newBadges = BADGES.filter((b) => newOnes.includes(b.id));
+      setBadgeQueue(newBadges);
+    }
+  }, [checked, treinosCompletos, streak, progressoSemanal, metaSemanal, modules]);
+
+  // Show badges one at a time
+  useEffect(() => {
+    if (badgeQueue.length > 0 && !currentBadge) {
+      setCurrentBadge(badgeQueue[0]);
+      setBadgeQueue((q) => q.slice(1));
+    }
+  }, [badgeQueue, currentBadge]);
 
   if (!checked) return null;
+
+  if (showOnboarding) {
+    return <OnboardingScreen onDone={() => setShowOnboarding(false)} />;
+  }
 
   const hora = new Date().getHours();
   const saudacao = hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";
@@ -358,6 +387,10 @@ export default function HomePage() {
     <ProfileSheet
       open={showProfile}
       onClose={() => setShowProfile(false)}
+    />
+    <BadgeUnlockModal
+      badge={currentBadge}
+      onClose={() => setCurrentBadge(null)}
     />
     </>
   );

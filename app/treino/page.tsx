@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import ProgressBar from "@/components/ProgressBar";
 import ExerciseMedia from "@/components/ExerciseMedia";
@@ -76,7 +76,10 @@ function formatDate(ts: number) {
 
 export default function TreinoPage() {
   const { setCurrentWorkout, userProfile, workoutHistory } = useAppStore();
+  const [mounted, setMounted] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+
+  useEffect(() => setMounted(true), []);
   const [selectedGrupo, setSelectedGrupo] = useState("Todos");
   const [isGenerating, setIsGenerating] = useState(false);
   const [genProgress, setGenProgress] = useState(0);
@@ -261,7 +264,7 @@ export default function TreinoPage() {
             >
               {/* Thumbnail area */}
               <div style={{ height: 100, background: isAI ? "linear-gradient(135deg, #0d1a0d, #0a1a0a)" : "linear-gradient(135deg, #1e161e, #0d1a0d)", position: "relative", overflow: "hidden" }}>
-                <ExerciseMedia alt={workout.nome} className="w-full" />
+                <ExerciseMedia alt={workout.nome} muscleGroup={workout.exercicios[0]?.grupo_muscular} className="w-full" />
                 <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
                   {isAI && (
                     <span
@@ -322,7 +325,7 @@ export default function TreinoPage() {
     </div>
 
       {/* Histórico */}
-      {workoutHistory.length > 0 && (
+      {mounted && workoutHistory.length > 0 && (
         <div className="px-4 pb-6 mt-2">
           <button
             className="btn-press w-full flex items-center justify-between py-3"

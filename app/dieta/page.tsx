@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import ProgressBar from "@/components/ProgressBar";
 import PageWrapper from "@/components/PageWrapper";
@@ -144,6 +144,9 @@ function MealCard({ meal }: { meal: Meal }) {
 export default function DietaPage() {
   const { meals, setMeals, userProfile } = useAppStore();
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const [metaAlimentar, setMetaAlimentar]   = useState<string | null>(null);
   const [restricoesSel, setRestricoesSel]   = useState<string[]>([]);
   const [alergiasSel, setAlergiasSel]       = useState<string[]>([]);
@@ -154,7 +157,7 @@ export default function DietaPage() {
   const [genError, setGenError]           = useState("");
   const [isAI, setIsAI]                   = useState(false);
 
-  const activeMeals = meals.length > 0 ? meals : MOCK_MEALS;
+  const activeMeals = mounted && meals.length > 0 ? meals : MOCK_MEALS;
 
   const totalCal     = activeMeals.flatMap((m) => m.itens).reduce((s, f) => s + f.calorias, 0);
   const consumidoCal = activeMeals.flatMap((m) => m.itens).filter((f) => f.consumido).reduce((s, f) => s + f.calorias, 0);
